@@ -10,7 +10,7 @@
   - defacement
  현재 모델에서는 문제를 단순화하기 위해 이진 분류 방식으로 라벨을 변환했습니다.
 | Original Label | Converted Label |
-|---|---|
+| --- | --- |
 | benign | 0 |
 | pishing | 1 |
 | malware | 1 |
