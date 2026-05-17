@@ -82,3 +82,92 @@ RandomForestClassifier(
 - 수정 후 Accuracy와 F1-score가 1차 모델보다 향상되었습니다.
 #### Remaining Issue
 일부 정상 URL, 예를 들어 `https://www.naver.com`, 을 여전히 악성 URL로 판단하는 문제가 남아 있습니다. 현재 모델은 URL 문자열 기반 특징만 사용하기 때문에, 도메인 평판, WHOIS 정보, 도메인 생성일, 검색 엔진 신뢰도 같은 정보를 반영하지 못합니다. 따라서 유명한 정상 도메인이라도 문자열 패턴만 보고 잘못 판단할 수 있습니다.
+
+---
+
+19s 동안 생각함
+
+아래 그대로 README에 넣으면 돼.
+위치는 ## Patch Notes 섹션으로 만들면 깔끔함.
+
+## Patch Notes
+
+### v0.1.0 - First Model
+
+- Kaggle Malicious URLs Dataset을 불러와 악성 URL 탐지 모델을 구현했습니다.
+- 기존 라벨을 이진 분류 형태로 변환했습니다.
+  - `0`: benign URL
+  - `1`: malicious URL
+- URL 문자열에서 기본적인 숫자 특징을 추출했습니다.
+  - URL length
+  - domain length
+  - path length
+  - number of dots
+  - number of hyphens
+  - number of digits
+  - HTTPS usage
+  - IP address usage
+- Random Forest Classifier를 사용해 첫 번째 모델을 학습했습니다.
+- Accuracy, Confusion Matrix, Classification Report를 이용해 모델 성능을 평가했습니다.
+- 새로운 URL을 입력하면 정상/악성 여부를 예측하는 함수를 구현했습니다.
+
+#### Issue
+
+1차 모델에서는 URL을 그대로 `urlparse()`에 입력하여 분석했습니다.  
+하지만 데이터셋에는 `http://` 또는 `https://`가 없는 URL이 많았고, 이 경우 hostname과 path가 일관되게 분리되지 않는 문제가 있었습니다.
+
+이로 인해 모델이 악성 URL의 실제 특징이 아니라, 데이터셋의 URL 저장 형식 차이를 학습할 가능성이 있었습니다.
+
+---
+
+### v0.2.0 - URL Parsing Fix
+
+- URL 파싱 방식을 개선했습니다.
+- `http://` 또는 `https://`가 없는 URL에는 임시로 `http://`를 추가한 뒤 파싱하도록 수정했습니다.
+- `urlparse()`가 처리하지 못하는 비정상 URL에 대해 예외 처리를 추가했습니다.
+- hostname length와 path length가 더 일관되게 추출되도록 수정했습니다.
+- 수정 후 Accuracy와 F1-score가 1차 모델보다 향상되었습니다.
+
+#### Remaining Issue
+
+일부 정상 URL, 예를 들어 `https://www.naver.com`, 을 여전히 악성 URL로 판단하는 문제가 남아 있습니다.
+
+현재 모델은 URL 문자열 기반 특징만 사용하기 때문에, 도메인 평판, WHOIS 정보, 도메인 생성일, DNS 정보, 실제 웹페이지 콘텐츠 등을 반영하지 못합니다.
+
+---
+
+### v0.3.0 - Lexical Feature Expansion
+
+- 논문 [Learning to Detect Malicious URLs](https://dl.acm.org/doi/abs/10.1145/1961189.1961202)에서 설명한 lexical feature 개념을 참고하여 특징 추출 함수를 확장했습니다.
+- URL을 단순 문자열 하나로 보지 않고, hostname, path, query, token 단위로 나누어 분석하도록 수정했습니다.
+- 다음과 같은 특징을 추가했습니다.
+  - hostname length
+  - path length
+  - query length
+  - TLD length
+  - primary domain length
+  - subdomain count
+  - hostname token count
+  - path token count
+  - query token count
+  - average token length
+  - maximum token length
+  - path depth
+  - query parameter count
+  - digit ratio
+  - special character ratio
+  - suspicious word count
+  - URL entropy
+  - hostname entropy
+- 데이터셋 형식 편향을 줄이기 위해 `uses_https` feature는 제거했습니다.
+- path 안에 `http` 문자열이 포함되는지 확인하는 feature를 추가했습니다.
+- 수정 후 Accuracy와 F1-score가 이전 모델보다 향상되었습니다.
+
+#### Remaining Issue
+
+`https://www.naver.com`의 악성 확률은 감소했지만, 여전히 악성 URL로 분류되는 문제가 남아 있습니다.
+
+이는 현재 모델이 URL 문자열의 형태만 보고 판단하기 때문입니다.
+즉, `naver.com`이 실제로 신뢰할 수 있는 유명 도메인이라는 외부 정보를 알지 못합니다.
+
+향후에는 host-based feature 또는 외부 검증 데이터셋을 추가하여 일반화 성능을 개선할 계획입니다.
